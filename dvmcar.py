@@ -1,6 +1,7 @@
 import os
 import gdown
 import glob
+import math
 import torch
 from torch.utils.data import Dataset
 import pandas as pd
@@ -27,10 +28,12 @@ class DvmCarDataset(Dataset):
     url_def = 'https://figshare.com/ndownloader/articles/19586296/versions/1'
 
     def __init__(self,
-                 transform = None,
-                 work: str = work_def,
-                 persist: str = None,
-                 url: str = url_def):
+                work: str = work_def,
+                persist: str = None,
+                url: str = url_def,
+                split = [0, 1],
+                transform = None):
+
         """Construct a DvmCarDataset using specified parameters. If dvmcar.zip 
         does not exist at the local work location, the constructor attempts to
         copy it from persist and if that is unsuccessful downloads it from url
@@ -48,6 +51,8 @@ class DvmCarDataset(Dataset):
         The getitem method optionally applies a transform to the image.
 
         Args:
+            split (list, optional): specifies the dataset split to be returned
+            as a list with lower and upper limits
             transform (_type_, optional): specifies getitem transform. Defaults
             to None. 
             work (str, optional): specifies path to dvmcar.zip. Defaults to work_def. 
@@ -58,6 +63,7 @@ class DvmCarDataset(Dataset):
         """
 
         # Retain arguments
+        self.split = split
         self.work = work
         self.persist = persist
         self.url = url
@@ -115,15 +121,19 @@ class DvmCarDataset(Dataset):
         # Create shuffled order for data splits
         self.shuffle = rng.permutation(len(self.info_df))
 
+        # Set split limits
+        self.i0 = math.floor(split[0]*len(self.info_df))
+        self.i1 = math.floor(split[1]*len(self.info_df))
+
     def __len__(self):
-        """Returns number of images in dataset.
+        """Returns number of images in the dataset split.
 
         Returns:
             _type_: Image count.
         """
 
-        # Number of rows in the dataframe
-        return len(self.info_df.index)
+        # Number of rows in the dataframe split
+        return self.i1-self.i0
 
     def __getitem__(self, index: int):
         """Retrieve the indexed record from the dataset.
@@ -136,7 +146,7 @@ class DvmCarDataset(Dataset):
         """
 
         # Randomly permute the index
-        shuffled_index = self.shuffle[index]
+        shuffled_index = self.shuffle[index+self.i0]
 
         # Retrieve path to image
         img_path = self.info_df['Image_path'][shuffled_index]
@@ -369,12 +379,19 @@ class DvmCarDataset(Dataset):
 if __name__ == '__main__':
     # Running as a script
 
-    # Create dataset
-    dvmcar = DvmCarDataset()
+    # Partition dataset into train, test, and validate subsets
+    partition0 = 0.8
+    partition1 = 0.9
+    dvmcar_train    = DvmCarDataset(split=[0,          partition0])
+    dvmcar_validate = DvmCarDataset(split=[partition0, partition1])
+    dvmcar_test     = DvmCarDataset(split=[partition1,          1])
+
+    # Report sizes
+    print(len(dvmcar_train))
+    print(len(dvmcar_validate))
+    print(len(dvmcar_test))
 
     # Get training, validation & test indices
-    print(dvmcar[0][1])
-    print(dvmcar[1][1])
-    print(dvmcar[2][1])
+
     #print(dvmcar.info_df[['Genmodel', 'Year', 'Image_name', 'class_index']][:5])
-    
+
