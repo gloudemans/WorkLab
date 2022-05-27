@@ -20,37 +20,41 @@ class DvmCarDataset(Dataset):
         _type_: _description_
     """
 
-    # Default work directory
+    # Default local work directory
     work_def = '/data/dvmcar/dvmcar.zip'
 
     # Default download url
     url_def = 'https://figshare.com/ndownloader/articles/19586296/versions/1'
 
     def __init__(self,
-                 transform=None,
+                 transform = None,
                  work: str = work_def,
                  persist: str = None,
                  url: str = url_def):
-        """Construct a DvmCarDataset using specifies parameters. If dvmcar.zip 
-        does not exist at the work location, the constructor attempt to copy it
-        from persist and if that is unsuccessful downloads it from url to both
-        work and persist. The constructor then unpacks the three subordinate zip
-        files from dvmcar.zip and expands each of them. Two of the zip files contain
-        images and the third contains supporting csv files. The constructor forms
-        a pandas dataframe with the full paths to every image and various other fields extracted
-        from the image filename. It joins this with the image table in order to 
-        provide means of navigating from image id to path (though in practice we
-        may not require that linkage). As the original class labels ("Genmodel ID")
-        are strings, the constructor forms integer ids based on alphabeticaly ordering of
+        """Construct a DvmCarDataset using specified parameters. If dvmcar.zip 
+        does not exist at the local work location, the constructor attempts to
+        copy it from persist and if that is unsuccessful downloads it from url
+        to both work and persist. The constructor then unpacks the three
+        subordinate zip files from dvmcar.zip and expands each of them. Two of
+        the zip files contain images and the third contains supporting csv
+        files. The constructor forms a pandas dataframe with the full paths to
+        every image and various other fields extracted from the image filename.
+        It joins this with the image table in order to provide means of
+        navigating from image id to path (though in practice we may not require
+        that linkage). As the original class labels ("Genmodel ID") are strings,
+        the constructor forms integer ids based on alphabetical ordering of
         unique labels and adds a column with these integer labels to the table.
 
         The getitem method optionally applies a transform to the image.
 
         Args:
-            transform (_type_, optional): specifies getitem transform. Defaults to None.
-            work (str, optional): specifies path to dvmcar.zip. Defaults to work_def.
-            persist (str, optional): specifies path to persistent storage of dvmcar.zip. Defaults to None.
-            url (str, optional): specifies downlaod url for dvmcar.zip. Defaults to url_def.
+            transform (_type_, optional): specifies getitem transform. Defaults
+            to None. 
+            work (str, optional): specifies path to dvmcar.zip. Defaults to work_def. 
+            persist (str, optional): specifies path to persistent storage of
+            dvmcar.zip. Defaults to None. 
+            url (str, optional): specifies downlaod url for dvmcar.zip. Defaults
+            to url_def.
         """
 
         # Retain arguments
@@ -105,7 +109,7 @@ class DvmCarDataset(Dataset):
         # Sort on image name to be sure of order
         self.info_df.sort_values(by='Image_name', inplace=True)
 
-        # Create random number generator with repeatable seed
+        # Create a random number generator with repeatable seed
         rng = np.random.default_rng(seed=0)
 
         # Create shuffled order for data splits
@@ -154,15 +158,17 @@ class DvmCarDataset(Dataset):
 
     @classmethod
     def fetch_zip(cls, work: str, persist: str, url: str):
-        """If the zip file specified by work does not exists, attempt to
-        copy it from persist. If that doesn;t work attempt to download it
-        from url to work and optionally copy it to persist. Return true 
-        if the file exists at work on exit.
+        """If the zip file specified by work does not exist, attempt to
+        copy it from persist. If that doesn't work attempt to download it from
+        url to work and optionally copy it to persist. Return true if the file
+        exists at work on exit.
 
         Args:
             work (str): specifies full path to dvmcar.zip
-            persist (str): optionally specifies full path to persistent copy of dvmcar.zip
-            url (str): specifies url from which to download dvmcar.zip in liue of work and persist 
+            persist (str): optionally specifies full path to persistent copy of
+            dvmcar.zip
+            url (str): specifies url from which to download dvmcar.zip in liue
+            of work and persist 
 
         Returns:
             Boolean: True if work has dvmcar.zip on exit
@@ -173,7 +179,7 @@ class DvmCarDataset(Dataset):
             # Split work path
             work_dir = os.path.split(work)[0]
 
-            # Coerce work directory
+            # Coerce work directory into existence
             os.makedirs(work_dir, exist_ok=True)
 
             # If work file already exists...
@@ -210,7 +216,7 @@ class DvmCarDataset(Dataset):
                 # Split persist path
                 persist_dir = os.path.split(persist)[0]
 
-                # Coerce work directory
+                # Coerce work directory into existence
                 os.makedirs(persist_dir, exist_ok=True)
 
                 # Copy from work to persist
@@ -280,8 +286,8 @@ class DvmCarDataset(Dataset):
     @classmethod
     def load_image_info(cls, work: str, dirs: list, class_id_to_index: dict):
         """If info.csv exists in same directory as dvmcar.zip specified by work,
-        load it. If not, iterate over directories specifies in dirs finding all jpg
-        files recursively. Extract fields from the name of each jpg file.
+        load it. If not, iterate over directories specified in dirs finding all
+        jpg files recursively. Extract fields from the name of each jpg file.
 
         Args:
             work (str): specifies the path to dvmcar.zip
@@ -369,5 +375,6 @@ if __name__ == '__main__':
     # Get training, validation & test indices
     print(dvmcar[0][1])
     print(dvmcar[1][1])
-    print(dvmcar[2][1])    
+    print(dvmcar[2][1])
     #print(dvmcar.info_df[['Genmodel', 'Year', 'Image_name', 'class_index']][:5])
+    
