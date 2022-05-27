@@ -121,9 +121,8 @@ class DvmCarDataset(Dataset):
         # Create shuffled order for data splits
         self.shuffle = rng.permutation(len(self.info_df))
 
-        # Set split limits
-        self.i0 = math.floor(split[0]*len(self.info_df))
-        self.i1 = math.floor(split[1]*len(self.info_df))
+        # Set the dataset split
+        self.set_split(split)
 
     def __len__(self):
         """Returns number of images in the dataset split.
@@ -165,6 +164,15 @@ class DvmCarDataset(Dataset):
 
         # Return image and label
         return image, label
+
+    def set_split(self, split):
+
+        # Save split 
+        self.split = split
+
+        # Set split limits
+        self.i0 = math.floor(split[0]*len(self.info_df))
+        self.i1 = math.floor(split[1]*len(self.info_df))        
 
     @classmethod
     def fetch_zip(cls, work: str, persist: str, url: str):
@@ -382,16 +390,20 @@ if __name__ == '__main__':
     # Partition dataset into train, test, and validate subsets
     partition0 = 0.8
     partition1 = 0.9
-    dvmcar_train    = DvmCarDataset(split=[0,          partition0])
-    dvmcar_validate = DvmCarDataset(split=[partition0, partition1])
-    dvmcar_test     = DvmCarDataset(split=[partition1,          1])
+    train_split    = [0,          partition0]
+    validate_split = [partition0, partition1]
+    test_split     = [partition1,          1]
+
+    dvmcar = DvmCarDataset()
 
     # Report sizes
-    print(len(dvmcar_train))
-    print(len(dvmcar_validate))
-    print(len(dvmcar_test))
-
-    # Get training, validation & test indices
+    print(len(dvmcar))
+    dvmcar.set_split(train_split)
+    print(len(dvmcar))
+    dvmcar.set_split(validate_split)
+    print(len(dvmcar))
+    dvmcar.set_split(test_split)
+    print(len(dvmcar))
 
     #print(dvmcar.info_df[['Genmodel', 'Year', 'Image_name', 'class_index']][:5])
 
