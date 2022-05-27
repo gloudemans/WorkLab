@@ -7,6 +7,8 @@ import pandas as pd
 from torchvision.io import read_image
 from zipfile import ZipFile
 
+import numpy as np
+
 
 class DvmCarDataset(Dataset):
     """PyTorch wrapper for DVM-CAR dataset.
@@ -71,8 +73,8 @@ class DvmCarDataset(Dataset):
 
         # self.ad_df = pd.read_csv(os.path.join(
         #     self.work_dir, 'Ad_table.csv'), skipinitialspace=True)
-        # self.basic_df = pd.read_csv(os.path.join(
-        #     self.work_dir, 'Basic_table.csv'), skipinitialspace=True)
+        self.basic_df = pd.read_csv(os.path.join(
+            self.work_dir, 'Basic_table.csv'), skipinitialspace=True)
         self.image_df = pd.read_csv(os.path.join(
             self.work_dir, 'Image_table.csv'), skipinitialspace=True)
         # self.price_df = pd.read_csv(os.path.join(
@@ -82,18 +84,32 @@ class DvmCarDataset(Dataset):
         # self.trim_df = pd.read_csv(os.path.join(
         #     self.work_dir, 'Trim_table.csv'), skipinitialspace=True)
 
+        # Get classes from basic table
+        self.classes = len(self.basic_df)
+        self.class_id = list(self.basic_df['Genmodel_ID'])
+        self.class_name = list(self.basic_df['Genmodel'])
+        self.class_id_to_index = dict(
+            zip(list(self.class_id), range(len(self.basic_df))))
+
         # Get image info as a pandas dataframe
         self.info_df = DvmCarDataset.load_image_info(
-            work, ['resized_DVM', 'confirmed_fronts'])
+            work, ['resized_DVM', 'confirmed_fronts'], self.class_id_to_index)
 
         # Drop duplicate images
         self.info_df.drop_duplicates(subset=['Image_name'], inplace=True)
 
         # # Join info with image table for viewpoint, quality
-        self.info_df = pd.merge(self.info_df, self.image_df, left_on='Image_name', right_on='Image_name')
+        self.info_df = pd.merge(
+            self.info_df, self.image_df, left_on='Image_name', right_on='Image_name')
 
         # Sort on image name to be sure of order
         self.info_df.sort_values(by='Image_name', inplace=True)
+
+        # Create random number generator with repeatable seed
+        rng = np.random.default_rng(seed=0)
+
+        # Create shuffled order for data splits
+        self.shuffle = rng.permutation(len(self.info_df))
 
     def __len__(self):
         """Returns number of images in dataset.
@@ -105,7 +121,7 @@ class DvmCarDataset(Dataset):
         # Number of rows in the dataframe
         return len(self.info_df.index)
 
-    def __getitem__(self, index : int):
+    def __getitem__(self, index: int):
         """Retrieve the indexed record from the dataset.
 
         Args:
@@ -115,14 +131,17 @@ class DvmCarDataset(Dataset):
             (image, label): returns image and corresponding label 
         """
 
+        # Randomly permute the index
+        shuffled_index = self.shuffle[index]
+
         # Retrieve path to image
-        img_path = self.info_df['Image_path'][index]
+        img_path = self.info_df['Image_path'][shuffled_index]
 
         # Read the image
         image = read_image(img_path)
 
         # Get the label number
-        label = self.info_df['Genmodel_number'][index]
+        label = self.info_df['class_index'][shuffled_index]
 
         # If transform specified...
         if self.transform:
@@ -259,7 +278,7 @@ class DvmCarDataset(Dataset):
                         inner_zip.extractall(work_dir)
 
     @classmethod
-    def load_image_info(cls, work: str, dirs: list):
+    def load_image_info(cls, work: str, dirs: list, class_id_to_index: dict):
         """If info.csv exists in same directory as dvmcar.zip specified by work,
         load it. If not, iterate over directories specifies in dirs finding all jpg
         files recursively. Extract fields from the name of each jpg file.
@@ -313,33 +332,28 @@ class DvmCarDataset(Dataset):
                 # Split the name into fields
                 fields = jpg_name.split('$$')
 
-                # Form a row containing the full path to jpg, the name of the jpg, and the fields extracted from the name
-                records.append([jpg_path] + [jpg_name] + fields)
+                # Extract fields from the image name
+                maker = fields[0]
+                genmodel = fields[1]
+                year = fields[2]
+                color = fields[3]
+                genmodel_id = fields[4]
+                instance = fields[5]
+                imname = fields[6]
 
-                # Add the "Genmodel_ID" field to to the list of class labels 
+                # Look up class index
+                class_index = class_id_to_index[genmodel_id]
+
+                # Append a row with fields
+                records.append([jpg_path, jpg_name, maker, genmodel,
+                                year, color, genmodel_id, instance, class_index])
+
+                # Add the "Genmodel_ID" field to to the list of class labels
                 genmodel_ids.add(fields[4])
-
-            # Make a list out of the label set
-            genmodel_ids = list(genmodel_ids)
-
-            # Sort the list
-            genmodel_ids.sort()
-
-            # For each record...
-            for record in records:
-
-                # Get its genmodel id
-                genmodel_id = record[6]
-
-                # Convert to integer index
-                genmodel_number = genmodel_ids.index(genmodel_id)
-
-                # Append integer genmodel
-                record.append(genmodel_number)
 
             # Create dataframe
             info = pd.DataFrame(records, columns=[
-                                'Image_path', 'Image_name', 'Maker', 'Genmodel', 'Year', 'Color', 'Genmodel_ID', 'Instance', 'Image_tail', 'Genmodel_number'])
+                                'Image_path', 'Image_name', 'Maker', 'Genmodel', 'Year', 'Color', 'Genmodel_ID', 'Instance', 'class_index'])
 
             # Save dataframe
             info.to_csv(csv)
@@ -349,6 +363,11 @@ class DvmCarDataset(Dataset):
 if __name__ == '__main__':
     # Running as a script
 
+    # Create dataset
     dvmcar = DvmCarDataset()
-    print(dvmcar.info_df[['Genmodel','Year','Image_name','Genmodel_number']][:5])
 
+    # Get training, validation & test indices
+    print(dvmcar[0][1])
+    print(dvmcar[1][1])
+    print(dvmcar[2][1])    
+    #print(dvmcar.info_df[['Genmodel', 'Year', 'Image_name', 'class_index']][:5])
