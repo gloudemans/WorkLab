@@ -3,13 +3,18 @@ import gdown
 import glob
 import math
 import torch
+from torch import nn
 from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
+from torchvision.transforms import ToTensor, Lambda
+
+import numpy as np
+
 import pandas as pd
 from torchvision.io import read_image
 from zipfile import ZipFile
 
-import numpy as np
-
+import matplotlib.pyplot as plt
 
 class DvmCarDataset(Dataset):
     """PyTorch wrapper for DVM-CAR dataset.
@@ -151,7 +156,7 @@ class DvmCarDataset(Dataset):
         img_path = self.info_df['Image_path'][shuffled_index]
 
         # Read the image
-        image = read_image(img_path)
+        image = read_image(img_path).float()
 
         # Get the label number
         label = self.info_df['class_index'][shuffled_index]
@@ -385,25 +390,9 @@ class DvmCarDataset(Dataset):
         return(info)
 
 if __name__ == '__main__':
-    # Running as a script
 
-    # Partition dataset into train, test, and validate subsets
-    partition0 = 0.8
-    partition1 = 0.9
-    train_split    = [0,          partition0]
-    validate_split = [partition0, partition1]
-    test_split     = [partition1,          1]
-
+    # Instantiate dataset
     dvmcar = DvmCarDataset()
 
-    # Report sizes
-    print(len(dvmcar))
-    dvmcar.set_split(train_split)
-    print(len(dvmcar))
-    dvmcar.set_split(validate_split)
-    print(len(dvmcar))
-    dvmcar.set_split(test_split)
-    print(len(dvmcar))
-
-    #print(dvmcar.info_df[['Genmodel', 'Year', 'Image_name', 'class_index']][:5])
-
+    # Print length
+    print('DvmCarDataset length: {0}'.format(len(dvmcar)))
