@@ -3,6 +3,7 @@ import gdown
 import glob
 import math
 import torch
+import shutil
 from torch import nn
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -27,14 +28,18 @@ class DvmCarDataset(Dataset):
     """
 
     # Default local work directory
-    work_def = '/data/dvmcar/dvmcar.zip'
+    # work_def = '/data/dvmcar/dvmcar.zip'
+    work_def = '/home/ubuntu/WorkLab/data/dvmcar/dvmcar.zip'
+    
+    # persist_def = None
+    persist_def = '/home/ubuntu/worklab/dvmcar.zip'
 
     # Default download url
     url_def = 'https://figshare.com/ndownloader/articles/19586296/versions/1'
 
     def __init__(self,
                 work: str = work_def,
-                persist: str = None,
+                persist: str = persist_def,
                 url: str = url_def,
                 split = [0, 1],
                 transform = None):
@@ -218,8 +223,8 @@ class DvmCarDataset(Dataset):
             if persist is not None and os.path.exists(persist):
 
                 # Copy from persist to work
-                os.shutil.copyfile(persist, work)
-
+                shutil.copyfile(persist, work)
+                      
                 # Log progress
                 print('Copied work file from {0} to {1}.'.format(
                     persist, work))
