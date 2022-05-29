@@ -28,11 +28,8 @@ class DvmCarDataset(Dataset):
     """
 
     # Default local work directory
-    # work_def = '/data/dvmcar/dvmcar.zip'
-    work_def = '/home/ubuntu/WorkLab/data/dvmcar/dvmcar.zip'
-    
-    # persist_def = None
-    persist_def = '/home/ubuntu/worklab/dvmcar.zip'
+    work_def = 'dvmcar'    
+    persist_def = None
 
     # Default download url
     url_def = 'https://figshare.com/ndownloader/articles/19586296/versions/1'
