@@ -245,7 +245,7 @@ class DvmCarDataset(Dataset):
                 os.makedirs(persist_dir, exist_ok=True)
 
                 # Copy from work to persist
-                os.shutil.copyfile(work, persist)
+                shutil.copyfile(work, persist)
 
                 # Log progress
                 print('Copied work file from {0} to {1}.'.format(
