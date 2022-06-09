@@ -47,6 +47,7 @@ class BoxCars3dDataset(Dataset):
         self.url = url
         self.split = split
         self.transform = transform
+        self.classes = 0
         self.label_type = label_type
 
         # Fetch data to work file
@@ -148,6 +149,9 @@ class BoxCars3dDataset(Dataset):
         # Set the specified dataset split
         self.set_split(split)
 
+        # Set the specified label type
+        self.set_label_type(label_type)        
+
     def __len__(self):
         """Returns the number of images in the currently defined
         dataset split.
@@ -172,6 +176,26 @@ class BoxCars3dDataset(Dataset):
               
         """ 
         self.label_type = label_type
+
+        if label_type=='label':
+
+            # Set the number of classes
+            self.classes = len(self.label_dict)
+            
+        elif label_type=='maker':
+
+            # Set the number of classes
+            self.classes = len(self.maker_dict)
+
+        elif label_type=='model':
+
+            # Set the number of classes
+            self.classes = len(self.model_dict)
+
+        elif label_type=='body':
+
+            # Set the number of classes
+            self.classes = len(self.body_dict)
 
     def __getitem__(self, index: int):
         """Retrieve the indexed record from the dataset. 
